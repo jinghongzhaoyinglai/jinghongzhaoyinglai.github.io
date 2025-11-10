@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简单弹球游戏</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            border: 2px solid #333;
+            background-color: #000;
+        }
+        .controls {
+            margin-top: 15px;
+            text-align: center;
+        }
+        button {
+            padding: 8px 16px;
+            margin: 0 5px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .score {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>弹球游戏</h1>
+    <div class="score">得分: <span id="score">0</span></div>
+    <canvas id="gameCanvas" width="480" height="320"></canvas>
+    <div class="controls">
+        <button id="startBtn">开始游戏</button>
+        <button id="pauseBtn">暂停</button>
+        <button id="resetBtn">重新开始</button>
+    </div>
+
+    <script>
+        // 获取Canvas元素和上下文
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 游戏状态
+        let gameState = {
+            score: 0,
+            isRunning: false,
+            ball: {
+                x: canvas.width / 2,
+                y: canvas.height - 30,
+                dx: 2,
+                dy: -2,
+                radius: 10
+            },
+            paddle: {
+                height: 10,
+                width: 75,
+                x: (canvas.width - 75) / 2
+            },
+            rightPressed: false,
+            leftPressed: false
+        };
+        
+        // 初始化游戏
+        function initGame() {
+            gameState = {
+                score: 0,
+                isRunning: false,
+                ball: {
+                    x: canvas.width / 2,
+                    y: canvas.height - 30,
+                    dx: 2,
+                    dy: -2,
+                    radius: 10
+                },
+                paddle: {
+                    height: 10,
+                    width: 75,
+                    x: (canvas.width - 75) / 2
+                },
+                rightPressed: false,
+                leftPressed: false
+            };
+            document.getElementById('score').textContent = gameState.score;
+        }
+        
+        // 绘制球
+        function drawBall() {
+            ctx.beginPath();
+            ctx.arc(gameState.ball.x, gameState.ball.y, gameState.ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#0095DD';
+            ctx.fill();
+            ctx.closePath();
+        }
+        
+        // 绘制挡板
+        function drawPaddle() {
+            ctx.beginPath();
+            ctx.rect(
+                gameState.paddle.x, 
+                canvas.height - gameState.paddle.height, 
+                gameState.paddle.width, 
+                gameState.paddle.height
+            );
+            ctx.fillStyle = '#0095DD';
+            ctx.fill();
+            ctx.closePath();
+        }
+        
+        // 绘制分数
+        function drawScore() {
+            document.getElementById('score').textContent = gameState.score;
+        }
+        
+        // 碰撞检测
+        function collisionDetection() {
+            // 球与墙壁碰撞
+            if (gameState.ball.x + gameState.ball.dx > canvas.width - gameState.ball.radius || 
+                gameState.ball.x + gameState.ball.dx < gameState.ball.radius) {
+                gameState.ball.dx = -gameState.ball.dx;
+            }
+            
+            // 球与天花板碰撞
+            if (gameState.ball.y + gameState.ball.dy < gameState.ball.radius) {
+                gameState.ball.dy = -gameState.ball.dy;
+            }
+            
+            // 球与挡板碰撞
+            if (gameState.ball.y + gameState.ball.dy > canvas.height - gameState.ball.radius - gameState.paddle.height) {
+                if (gameState.ball.x > gameState.paddle.x && gameState.ball.x < gameState.paddle.x + gameState.paddle.width) {
+                    gameState.ball.dy = -gameState.ball.dy;
+                    gameState.score++;
+                } else if (gameState.ball.y + gameState.ball.dy > canvas.height) {
+                    // 游戏结束
+                    alert("游戏结束! 得分: " + gameState.score);
+                    initGame();
+                    draw();
+                }
+            }
+        }
+        
+        // 移动挡板
+        function movePaddle() {
+            if (gameState.rightPressed && gameState.paddle.x < canvas.width - gameState.paddle.width) {
+                gameState.paddle.x += 7;
+            } else if (gameState.leftPressed && gameState.paddle.x > 0) {
+                gameState.paddle.x -= 7;
+            }
+        }
+        
+        // 移动球
+        function moveBall() {
+            gameState.ball.x += gameState.ball.dx;
+            gameState.ball.y += gameState.ball.dy;
+        }
+        
+        // 绘制函数
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBall();
+            drawPaddle();
+            drawScore();
+            
+            if (gameState.isRunning) {
+                collisionDetection();
+                moveBall();
+                movePaddle();
+                requestAnimationFrame(draw);
+            }
+        }
+        
+        // 键盘事件监听
+        function keyDownHandler(e) {
+            if (e.key === 'Right' || e.key === 'ArrowRight') {
+                gameState.rightPressed = true;
+            } else if (e.key === 'Left' || e.key === 'ArrowLeft') {
+                gameState.leftPressed = true;
+            }
+        }
+        
+        function keyUpHandler(e) {
+            if (e.key === 'Right' || e.key === 'ArrowRight') {
+                gameState.rightPressed = false;
+            } else if (e.key === 'Left' || e.key === 'ArrowLeft') {
+                gameState.leftPressed = false;
+            }
+        }
+        
+        // 按钮事件监听
+        document.getElementById('startBtn').addEventListener('click', function() {
+            if (!gameState.isRunning) {
+                gameState.isRunning = true;
+                draw();
+            }
+        });
+        
+        document.getElementById('pauseBtn').addEventListener('click', function() {
+            gameState.isRunning = false;
+        });
+        
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            initGame();
+            draw();
+        });
+        
+        // 添加键盘事件监听
+        document.addEventListener('keydown', keyDownHandler);
+        document.addEventListener('keyup', keyUpHandler);
+        
+        // 初始化并绘制游戏
+        initGame();
+        draw();
+    </script>
+</body>
+</html>
